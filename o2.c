@@ -9,36 +9,47 @@
 #define W 32
 #define N  H*W
 
-void labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
-	pixel[i][j]=n;	
-	if(i>0){
-		if(pixel[i-1][j]>0){
-			pixel[i][j]=pixel[i-1][j];
-			if(pixel[i-1][j]==0){
-				labeling(image,i-1,j,n,pixel);
-			}
-		}
-	}
-	if(j>0){
-		if(pixel[i][j-1]>0){
-			pixel[i][j]=pixel[i][j-1];
-			if(pixel[i][j-1]==0){
-				labeling(image,i,j-1,n,pixel);
-			}
-		}
-	}
-	if(pixel[i][j+1]>0 && j<W-1){
-		pixel[i][j]=pixel[i][j+1];
-		if(pixel[i][j+1]==0){
-			labeling(image,i,j+1,n,pixel);
-		}
-	}
-	if(pixel[i+1][j]>0 && i<H-1){
-		pixel[i][j]=pixel[i+1][j];
-		if(pixel[i+1][j]==0){
-			labeling(image,i+1,j,n,pixel);
-		}
-	}
+int labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
+  int check=0;
+
+  pixel[i][j]=n;
+  if(i>0){
+    if(pixel[i-1][j]>0){
+      pixel[i][j]=pixel[i-1][j];
+      if(pixel[i-1][j]==0){
+	labeling(image,i-1,j,n,pixel);
+	check++;
+      }
+    }
+  }
+  if(j>0){
+    if(pixel[i][j-1]>0){
+      pixel[i][j]=pixel[i][j-1];
+      if(pixel[i][j-1]==0){
+	labeling(image,i,j-1,n,pixel);
+	check++;
+      }
+    }
+  }
+  if(pixel[i][j+1]>0 && j<W-1){
+    pixel[i][j]=pixel[i][j+1];
+    if(pixel[i][j+1]==0){
+      labeling(image,i,j+1,n,pixel);
+      check++;
+    }
+  }
+  if(pixel[i+1][j]>0 && i<H-1){
+    pixel[i][j]=pixel[i+1][j];
+    if(pixel[i+1][j]==0){
+      labeling(image,i+1,j,n,pixel);
+      check++;
+    }
+  }
+  if(check<0){
+    n++;
+    pixel[i][j]=n;
+  }
+  return n;
 }
 
 int main()
@@ -49,19 +60,14 @@ int main()
   GC gc;
   unsigned long white,black;
   XEvent event;
-  int i,j,k,n,label;
+  int i,j,k,n,label=1;
   XPoint points[N];
-	XImage *image;
+  XImage *image;
   int ifstart[N];
   int err;
   int pixel[W][H]={0};
   char key[8];
   char name[50];
-  int c;
-  char tmp[H+4];
-  FILE *fp;
-  int countn;
-  char cha[2];
   
   d=XOpenDisplay(NULL);
   white=WhitePixel(d,DefaultScreen(d));
@@ -122,12 +128,11 @@ int main()
       }else if(key[0] == 'i'){
 	printf("be array file name:\n");
 
-	label=1;
 	image = XGetImage(d,w,0,0,W,H,AllPlanes,XYPixmap);
 	for(i=0;i<W;i++){
 		for(j=0;j<H;j++){
 			if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){	
-				labeling(image,i,j,label,pixel);
+				label=labeling(image,i,j,label,pixel);
 			}else if(XGetPixel(image,i,j) == 0xFFFFFF){
 				pixel[i][j]=0;
 			}
