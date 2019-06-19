@@ -25,6 +25,7 @@ main()
   char key[8];
   char name[50];
   int c;
+  char tmp[H+4];
   FILE *fp;
   int countn;
   char cha[2];
@@ -93,7 +94,11 @@ main()
 	  printf("file nothing\n");
 	  return -1;
 	}
+	for(i=0;i<3;i++){
+	  fgets(tmp,H+4,fp);
+	}
 
+	/*
 	countn=0;
 	while((c == fgetc(fp)) != EOF){
 	  snprintf(cha,sizeof(c),"%d",c);
@@ -106,6 +111,7 @@ main()
 	    }
 	  }
 	}
+	*/
 	i=0;
 	j=0;
 	
