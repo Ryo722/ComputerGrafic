@@ -9,7 +9,39 @@
 #define W 32
 #define N  H*W
 
-main()
+void labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
+	pixel[i][j]=n;	
+	if(i>0){
+		if(pixel[i-1][j]>0){
+			pixel[i][j]=pixel[i-1][j];
+			if(pixel[i-1][j]==0){
+				labeling(image,i-1,j,n,pixel);
+			}
+		}
+	}
+	if(j>0){
+		if(pixel[i][j-1]>0){
+			pixel[i][j]=pixel[i][j-1];
+			if(pixel[i][j-1]==0){
+				labeling(image,i,j-1,n,pixel);
+			}
+		}
+	}
+	if(pixel[i][j+1]>0 && j<W-1){
+		pixel[i][j]=pixel[i][j+1];
+		if(pixel[i][j+1]==0){
+			labeling(image,i,j+1,n,pixel);
+		}
+	}
+	if(pixel[i+1][j]>0 && i<H-1){
+		pixel[i][j]=pixel[i+1][j];
+		if(pixel[i+1][j]==0){
+			labeling(image,i+1,j,n,pixel);
+		}
+	}
+}
+
+int main()
 {
   Display *d;
   Window w;
@@ -17,11 +49,12 @@ main()
   GC gc;
   unsigned long white,black;
   XEvent event;
-  int i,j,k,n;
+  int i,j,k,n,label;
   XPoint points[N];
+	XImage *image;
   int ifstart[N];
   int err;
-  int pixel[H][W];
+  int pixel[W][H]={0};
   char key[8];
   char name[50];
   int c;
@@ -74,64 +107,45 @@ main()
       
       break;
     case KeyPress : 
-      XLookupString((XKeyEvent*)&event,key,sizeof(key),NULL,NULL);
+      XLookupString((XKeyEvent*)&event,key,sizeof(key),NULL,NULL);//
       if(key[0] == 's'){
 	printf("save file name:");
-	scanf("%s",&name);
+	scanf("%s",name);
 	XCopyArea(d,w,pm,gc,0,0,H,W,0,0);
 	err = XpmWriteFileFromPixmap(d,name,pm,0,NULL);
       }else if(key[0] == 'l'){
-	printf("load file name:");
-	scanf("%s",&name);
+	printf("load file name:\n");
+	scanf("%s",name);
 	err = XpmReadFileToPixmap(d,w,name,&pm,NULL,NULL);
 	XCopyArea(d,pm,w,gc,0,0,H,W,0,0);
 	XFlush(d);
       }else if(key[0] == 'i'){
-	printf("be array file name:");
-	scanf("%s",&name);
-	fp = fopen(name,"r");
-	if(fp == NULL){
-	  printf("file nothing\n");
-	  return -1;
-	}
-	for(i=0;i<3;i++){
-	  fgets(tmp,H+4,fp);
-	}
+	printf("be array file name:\n");
 
-	/*
-	countn=0;
-	while((c == fgetc(fp)) != EOF){
-	  snprintf(cha,sizeof(c),"%d",c);
-	  if(cha[0] != '\n'){
-	    k++;
-	  }else if(cha[0] == '\n'){
-	    countn++;
-	    if(countn==5){
-	      break;
-	    }
-	  }
+	label=1;
+	image = XGetImage(d,w,0,0,W,H,AllPlanes,XYPixmap);
+	for(i=0;i<W;i++){
+		for(j=0;j<H;j++){
+			if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){	
+				labeling(image,i,j,label,pixel);
+			}else if(XGetPixel(image,i,j) == 0xFFFFFF){
+				pixel[i][j]=0;
+			}
+		}
 	}
-	*/
-	i=0;
-	j=0;
-	
+			
 
-	while((c = fgetc(fp)) != EOF){
-	  //putchar(c);
-	  if(c ==  ' '){
-	    pixel[i][j]=0;
-	  }else if(c == '.'){
-	    pixel[i][j]=1;
-	  }
-	  printf("%d",pixel[i][j]);
-	  j++;
-	  if(j==W){
-	    printf("\n");
-	    i++;
-	    j=0;
-	    fseek(fp,4,SEEK_CUR);
-	  }
+	for(i=0;i<H;i++){
+		for(j=0;j<W;j++){
+			printf("%2d",pixel[i][j]);
+			if(pixel[i][j]!=0){
+				XPutPixel(image,i,j,0xFF0000);
+			}	
+		}
+		printf("\n");
 	}
+	XPutImage(d,w,gc,image,0,0,0,0,W,H);
+
 	printf("\n");
       }else{
 	exit(0);
