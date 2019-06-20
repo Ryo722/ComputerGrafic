@@ -1,33 +1,3 @@
-image = XGetImage(d,w,0,0,W,H,AllPlanes,XYPixmap);
-	for(i=0;i<W;i++){
-		for(j=0;j<H;j++){
-			if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){	
-				label=labeling(image,i,j,label,pixel);
-			}else if(XGetPixel(image,i,j) == 0xFFFFFF){
-				pixel[i][j]=0;
-			}
-		}
-	}
-	
-	
-	
-    
-int labeling(XImage *image, int i, int j, int n, int pixel[W][H]){
-  if(i<W-1 && pixel[i+1][j]>0){
-    pixel[i][j]=labeling(image,i+1,j,n,pixel);
-  }else if (j<H-1 && pixel[i][j+1]>0){
-    pixel[i][j+1]=labeling(image,i,j+1,n,pixel);
-  }else if (i>0 && pixel[i-1][j]>0){
-    pixel[i-1][j]=labeling(image,i-1,j,n,pixel);
-  }else if (j>0 && pixel[i][j-1]>0){
-    pixel[i][j-1]=labeling(image,i,j-1,n,pixel);
-  }else{
-    n++;
-    pixel[i][j]=n;
-  }
-  return pixel[i][j];
-}
-
 
 
 int labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
@@ -72,27 +42,72 @@ int labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
   return n;
 }
 
+void sort(int ary[2]){
+  int tmp;
+  
+  if(ary[0]>ary[1]){
+    tmp=ary[0];
+    ary[0]=ary[1];
+    ary[1]=tmp;
+  }
+}
+
 void labeling(XImage *image, int pixel[W][H]){
-	int i,j;
-	int label=0;
+  int i,j,k,l,o;
+  int check, mode;
+  int px=2;//4kinbo
+  int label=0;
+  int lbp[4]={0};
+  int label_lib[W*H];
+  
+  for(i=0;i<W;i++){
+    for(j=0;j<H;j++){
+      if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){//byougasitetarea
+	//kinbouno label miru
+	lbp[0]=pixel[i-1][j];//1tu ue no
+	lbp[1]=pixel[i][j-1];//1tu left
 	
-	
-	for(i=0;i<W;i++){
-		for(j=0;j<H;j++){
-			if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){
-				if(i<W-1 && pixel[i+1][j]>0){
-					pixel[i][j]=pixel[i+1][j];
-				}else if (j<H-1 && pixel[i][j+1]>0){
-					pixel[i][j+1]=labeling(image,i,j+1,n,pixel);
-				}else if (i>0 && pixel[i-1][j]>0){
-					pixel[i-1][j]=labeling(image,i-1,j,n,pixel);
-				}else if (j>0 && pixel[i][j-1]>0){
-					pixel[i][j-1]=labeling(image,i,j-1,n,pixel);
-				}else{
-					label++;
-					pixel[i][j]=label;
-				}
-			}
-		}	
+	sort(lbp);//label no atai sort
+	mode=0;
+	check=lbp[0];//kioku sita label tigau ka siraberu
+	for(k=1;k<px;k++){
+	  if(n!=lbp[k]){
+	    mode++;//label tigau kazu ni yotte kinou change
+	    check=lbp[k];
+	  }
 	}
-}			
+
+	switch(mode){
+	case 0://first black
+	  if(lbp[0] == 0){//kinbou ni no label
+	    label++;
+	    label_lib[label]=label;
+	    pixel[i][j]=label;
+	  }else{//utigawa no ten
+	    pixel[i][j]=lbp[0];
+	  }
+	  break;
+	case 1://kinbou 1tu tigau
+	  pixel[i][j]=lbp[px-1];
+	  break;
+	  /*
+	case 2://kinbou 2tu tigau
+	  for(k=0;k<px;k++){
+	    if(lbp[k]!=0){
+	      pixel[i][j]=lbp[k];
+	      break;
+	    }
+	    for(l=0;l<label;l++){
+	      for(o=k+1;o<px;o++){
+		if(lbp[o]==label_lib[l]){
+label_lib[o]=
+	  */
+
+	}
+      }	
+    }
+  }
+  for(i=0;i<W;i++){
+    for(j=0;j<H;j++){
+      pixel[i][j]=
+	}			

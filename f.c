@@ -1,76 +1,53 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/xpm.h>
-#define Kinbo 4
-#define H 32
-#define W 32
+
+#define H 56
+#define W 56
 #define N  H*W
 
-void Ssort(int ary[4],int len){
-  int i,j,min,tmp;
-  int count=0;
-  
-  for(i=0;i<len;i++){
-    min=i;
-    for(j=i+1;j<len;j++){
-      if(ary[j]<ary[min]){
-	min=j;
-      }
+//labeling
+int labeling(XImage *image, int i, int j,int n, int pixel[W][H]){
+  if(i>0 && j>0 && pixel[i-1][j] == 0 && pixel[i-1][j-1] == 0 && pixel[i-1][j+1] == 0 && pixel[i][j-1] == 0){//sima ka douka hantei 
+    n++;
+    if(n>10){
+      printf("I can't prepare color enough\n");
     }
-
-    if(min!=i){
-      tmp=ary[i];
-      ary[i]=ary[min];
-      ary[min]=tmp;
-    }
+    pixel[i][j]=n;
   }
-}
-
-void labeling(XImage *image, int pixel[W][H]){
-  int i,j,k,l,n,o;
-  int check, mode;
-  int px=2;//4kinbo
-  int label=0;
-  int lbp[Kinbo]={0};
-  int label_lib[11];
-int a;
-
-  
-  for(i=0;i<H;i++){
-    for(j=0;j<W;j++){
-      if(XGetPixel(image,i,j) == 0x000000){//byougasitetarea
-	
-	//kinbouno label miru
-	if(i>0){
-	  lbp[0]=pixel[i-1][j];//1tu ue 
-	}
-	if(j>0){
-	  lbp[1]=pixel[i][j-1];//1tu left
-	}
-	if(i<H-1){
-	  lbp[2]=pixel[i+1][j];
-	}
-	if(j<W-1){
-	  lbp[3]=pixel[i][j+1];
-	}
-
-	Ssort(lbp,Kinbo);//label no atai sort
-	
-	pixel[i][j]=lbp[Kinbo];
-
-	if(i>0 && j>0 && pixel[i-1][j] == 0 && pixel[i-1][j-1] == 0 && pixel[i-1][j+1] == 0 && pixel[i][j-1] == 0){//mawari ni label nai
-	  label++;
-	  label_lib[label]=label;
-	  pixel[i][j]=label;
-	}
+  //saiki teki ni labeling
+  if(i>0){
+    if(pixel[i-1][j]>0){//ue
+      pixel[i][j]=pixel[i-1][j];
+      if(pixel[i-1][j]==0){
+	labeling(image,i-1,j,n,pixel);
       }
     }
   }
-
+  if(j>0){
+    if(pixel[i][j-1]>0){//hidari
+      pixel[i][j]=pixel[i][j-1];
+      if(pixel[i][j-1]==0){
+	labeling(image,i,j-1,n,pixel);
+      }
+    }
+  }
+  if(pixel[i][j+1]>0 && j<W-1){//
+    pixel[i][j]=pixel[i][j+1];
+    if(pixel[i][j+1]==0){
+      labeling(image,i,j+1,n,pixel);
+    }
+  }
+  if(pixel[i+1][j]>0 && i<H-1){
+    pixel[i][j]=pixel[i+1][j];
+    if(pixel[i+1][j]==0){
+      labeling(image,i+1,j,n,pixel);
+    }
+  }
+  return n;
 }
 
 int main()
@@ -136,33 +113,72 @@ int main()
     case KeyPress : 
       XLookupString((XKeyEvent*)&event,key,sizeof(key),NULL,NULL);//
       if(key[0] == 's'){
-	printf("Save file name:");
+	printf("save file name:");
 	scanf("%s",name);
 	XCopyArea(d,w,pm,gc,0,0,H,W,0,0);
 	err = XpmWriteFileFromPixmap(d,name,pm,0,NULL);
       }else if(key[0] == 'l'){
-	printf("Load file name:");
+	printf("load file name:\n");
 	scanf("%s",name);
 	err = XpmReadFileToPixmap(d,w,name,&pm,NULL,NULL);
 	XCopyArea(d,pm,w,gc,0,0,H,W,0,0);
 	XFlush(d);
-      }else if(key[0] == 'r'){
-	printf("Labeling\n");
+      }else if(key[0] == 'i'){
+	printf("be array file name:\n");
+
 	image = XGetImage(d,w,0,0,W,H,AllPlanes,XYPixmap);
-	labeling(image,pixel);
+	for(i=0;i<W;i++){
+		for(j=0;j<H;j++){
+			if((XGetPixel(image,i,j) == 0x000000) && pixel[i][j]==0){	
+				label=labeling(image,i,j,label,pixel);
+			}else if(XGetPixel(image,i,j) == 0xFFFFFF){
+				pixel[i][j]=0;
+			}
+		}
+	}
+			
 
 	for(i=0;i<H;i++){
 		for(j=0;j<W;j++){
 			printf("%2d",pixel[i][j]);
-			if(pixel[i][j]!=0){
-				XPutPixel(image,i,j,0xFF0000);
-			}	
+			switch(pixel[i][j]){
+			case 1:
+			  XPutPixel(image,i,j,0xFF0000);
+			  break;
+			case 2:
+			  XPutPixel(image,i,j,0x00FF00);
+			  break;
+			case 3:
+			  XPutPixel(image,i,j,0x0000FF);
+			  break;
+			case 4:
+			  XPutPixel(image,i,j,0x000000);
+			  break;
+			case 5:
+			  XPutPixel(image,i,j,0xFFFF00);
+			  break;
+			case 6:
+			  XPutPixel(image,i,j,0xFF00FF);
+			  break; 
+			case 7:
+			  XPutPixel(image,i,j,0x00FFFF);
+			  break;
+			case 8:
+			  XPutPixel(image,i,j,0xF0F0F0);
+			  break;
+			case 9:
+			  XPutPixel(image,i,j,0xFFF000);
+			  break;
+			case 10:
+			  XPutPixel(image,i,j,0x000FFF);
+			  break;
+			}		
 		}
 		printf("\n");
 	}
 	XPutImage(d,w,gc,image,0,0,0,0,W,H);
+	
 	printf("\n");
-
       }else{
 	exit(0);
       }
